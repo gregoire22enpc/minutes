@@ -246,6 +246,7 @@ fn main() {
             commands::cmd_stop_recording,
             commands::cmd_open_file,
             commands::cmd_clear_latest_output,
+            commands::cmd_permission_center,
             commands::cmd_recovery_items,
             commands::cmd_retry_recovery,
             commands::cmd_get_meeting_detail,

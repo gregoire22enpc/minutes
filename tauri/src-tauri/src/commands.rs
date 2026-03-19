@@ -42,6 +42,14 @@ pub struct OutputNotice {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct ReadinessItem {
+    pub label: String,
+    pub state: String,
+    pub detail: String,
+    pub optional: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct RecoveryItem {
     pub kind: String,
     pub title: String,
@@ -173,6 +181,147 @@ fn parse_sections(body: &str) -> Vec<MeetingSection> {
     }
 
     sections
+}
+
+fn model_status(config: &Config) -> ReadinessItem {
+    let model_name = &config.transcription.model;
+    let model_file = config
+        .transcription
+        .model_path
+        .join(format!("ggml-{}.bin", model_name));
+    let exists = model_file.exists();
+
+    ReadinessItem {
+        label: "Speech model".into(),
+        state: if exists { "ready" } else { "attention" }.into(),
+        detail: if exists {
+            format!("{} is installed at {}.", model_name, model_file.display())
+        } else {
+            format!(
+                "{} is not installed yet. Download it before recording.",
+                model_name
+            )
+        },
+        optional: false,
+    }
+}
+
+fn microphone_status() -> ReadinessItem {
+    let devices = minutes_core::capture::list_input_devices();
+    let has_devices = !devices.is_empty();
+
+    ReadinessItem {
+        label: "Microphone & audio input".into(),
+        state: if has_devices { "ready" } else { "attention" }.into(),
+        detail: if has_devices {
+            format!(
+                "{} audio input device{} detected. macOS may still prompt the first time you record.",
+                devices.len(),
+                if devices.len() == 1 { "" } else { "s" }
+            )
+        } else {
+            "No audio input devices detected. Check hardware, macOS input settings, and permissions.".into()
+        },
+        optional: false,
+    }
+}
+
+fn calendar_status() -> ReadinessItem {
+    let output = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(r#"tell application "Calendar" to get name of every calendar"#)
+        .output();
+
+    match output {
+        Ok(result) if result.status.success() => ReadinessItem {
+            label: "Calendar suggestions".into(),
+            state: "ready".into(),
+            detail: "Calendar access is available for upcoming-meeting suggestions.".into(),
+            optional: true,
+        },
+        Ok(result) => {
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            ReadinessItem {
+                label: "Calendar suggestions".into(),
+                state: "attention".into(),
+                detail: if stderr.trim().is_empty() {
+                    "Calendar access is unavailable right now. Suggestions will stay hidden until access is granted.".into()
+                } else {
+                    format!(
+                        "Calendar access is unavailable right now ({}). Suggestions will stay hidden until access is granted.",
+                        stderr.trim()
+                    )
+                },
+                optional: true,
+            }
+        }
+        Err(e) => ReadinessItem {
+            label: "Calendar suggestions".into(),
+            state: "attention".into(),
+            detail: format!(
+                "Calendar checks are unavailable right now ({}). Suggestions will stay hidden.",
+                e
+            ),
+            optional: true,
+        },
+    }
+}
+
+fn watcher_status(config: &Config) -> ReadinessItem {
+    let existing = config
+        .watch
+        .paths
+        .iter()
+        .filter(|path| path.exists())
+        .count();
+    let total = config.watch.paths.len();
+    let state = if total > 0 && existing == total {
+        "ready"
+    } else {
+        "attention"
+    };
+
+    let detail = if total == 0 {
+        "No watch folders configured. Voice-memo ingestion is available but not set up.".into()
+    } else if existing == total {
+        format!(
+            "{} watch folder{} ready for inbox processing.",
+            total,
+            if total == 1 { "" } else { "s" }
+        )
+    } else {
+        format!(
+            "{} of {} watch folders currently exist. Missing folders will prevent automatic inbox processing.",
+            existing, total
+        )
+    };
+
+    ReadinessItem {
+        label: "Watcher folders".into(),
+        state: state.into(),
+        detail,
+        optional: true,
+    }
+}
+
+fn output_dir_status(config: &Config) -> ReadinessItem {
+    let exists = config.output_dir.exists();
+    ReadinessItem {
+        label: "Meeting output folder".into(),
+        state: if exists { "ready" } else { "attention" }.into(),
+        detail: if exists {
+            format!(
+                "Meeting markdown is stored in {}.",
+                config.output_dir.display()
+            )
+        } else {
+            format!(
+                "Output folder {} does not exist yet. Minutes will create it on demand.",
+                config.output_dir.display()
+            )
+        },
+        optional: false,
+    }
 }
 
 fn recovery_title(path: &std::path::Path, fallback: &str) -> String {
@@ -517,6 +666,19 @@ pub fn cmd_clear_latest_output(state: tauri::State<AppState>) {
 }
 
 #[tauri::command]
+pub fn cmd_permission_center() -> serde_json::Value {
+    let config = Config::load();
+    let items = vec![
+        model_status(&config),
+        microphone_status(),
+        calendar_status(),
+        watcher_status(&config),
+        output_dir_status(&config),
+    ];
+    serde_json::to_value(items).unwrap_or(serde_json::json!([]))
+}
+
+#[tauri::command]
 pub fn cmd_recovery_items() -> serde_json::Value {
     let config = Config::load();
     serde_json::to_value(scan_recovery_items(&config)).unwrap_or(serde_json::json!([]))
@@ -775,6 +937,23 @@ mod tests {
         assert_eq!(items.len(), 2);
         assert!(items.iter().any(|item| item.kind == "watch-failed"));
         assert!(items.iter().any(|item| item.kind == "preserved-capture"));
+    }
+
+    #[test]
+    fn model_status_reports_missing_model() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let config = Config {
+            transcription: minutes_core::config::TranscriptionConfig {
+                model: "small".into(),
+                model_path: dir.path().join("models"),
+                min_words: 3,
+            },
+            ..Config::default()
+        };
+
+        let status = model_status(&config);
+        assert_eq!(status.label, "Speech model");
+        assert_eq!(status.state, "attention");
     }
 
     #[test]
