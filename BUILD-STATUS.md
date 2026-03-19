@@ -80,6 +80,7 @@
 | GitHub | github.com/silverstein/minutes — v0.1.0 tagged |
 | Homebrew | brew tap silverstein/tap && brew install minutes |
 | CI | GitHub Actions (local commit, needs workflow-scoped push) |
+| Signed macOS release pipeline | Done (`.github/workflows/release-macos.yml` + `docs/RELEASE-MACOS.md`) |
 
 ## Bugs Fixed (2026-03-18 session)
 | Bug | Impact | Fix |

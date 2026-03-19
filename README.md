@@ -73,6 +73,15 @@ cargo tauri build --bundles app
 
 The desktop app adds a system tray icon, recording controls, audio visualizer, and a meeting list window. macOS will prompt for microphone permission on first recording.
 
+### Signed macOS releases
+
+Maintainers can build signed and notarized desktop releases with the GitHub
+Actions workflow in
+[.github/workflows/release-macos.yml](/Users/silverbook/Sites/minutes/.github/workflows/release-macos.yml).
+
+The full secrets contract and maintainer steps live in
+[docs/RELEASE-MACOS.md](/Users/silverbook/Sites/minutes/docs/RELEASE-MACOS.md).
+
 ### Troubleshooting
 
 **No speech detected / blank audio:**
