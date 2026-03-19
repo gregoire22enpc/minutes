@@ -81,6 +81,7 @@
 | Homebrew | brew tap silverstein/tap && brew install minutes |
 | CI | GitHub Actions (local commit, needs workflow-scoped push) |
 | Signed macOS release pipeline | Done (`.github/workflows/release-macos.yml` + `docs/RELEASE-MACOS.md`) |
+| Release channel policy | Done (`docs/RELEASE-CHANNELS.md`) |
 
 ## Bugs Fixed (2026-03-18 session)
 | Bug | Impact | Fix |

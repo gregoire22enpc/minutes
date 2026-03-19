@@ -82,6 +82,9 @@ Actions workflow in
 The full secrets contract and maintainer steps live in
 [docs/RELEASE-MACOS.md](/Users/silverbook/Sites/minutes/docs/RELEASE-MACOS.md).
 
+Stable vs preview channels and rollback expectations live in
+[docs/RELEASE-CHANNELS.md](/Users/silverbook/Sites/minutes/docs/RELEASE-CHANNELS.md).
+
 ### Troubleshooting
 
 **No speech detected / blank audio:**

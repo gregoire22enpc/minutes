@@ -75,6 +75,16 @@ That will:
 - build the signed + notarized artifacts
 - attach the generated `.dmg` to the GitHub Release for that tag
 
+For preview builds, use a prerelease tag such as:
+
+```bash
+git tag v0.2.0-beta.1
+git push origin v0.2.0-beta.1
+```
+
+The workflow will publish those as GitHub prereleases instead of stable
+releases.
+
 ## Local maintainer verification
 
 Before trusting the workflow end-to-end, maintainers should verify a signed
@@ -96,3 +106,5 @@ first and then run the same commands.
 - The workflow currently builds the runner-native macOS bundle. If universal
   binaries become a requirement later, track that separately instead of
   complicating this first trusted pipeline.
+- Channel and rollback rules live in
+  [docs/RELEASE-CHANNELS.md](/Users/silverbook/Sites/minutes/docs/RELEASE-CHANNELS.md).
