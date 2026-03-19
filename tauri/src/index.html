@@ -2034,16 +2034,8 @@
       meetingsScroll.replaceChildren();
 
       if (!meetings || meetings.length === 0) {
-        if (currentSetup?.needsSetup) {
-          footer.style.display = 'none';
-          renderSetupEmptyState();
-        } else {
-          footer.style.display = '';
-          const empty = document.createElement('div');
-          empty.className = 'empty-state';
-          empty.innerHTML = '<div class="icon">🎙</div><div class="title">No meetings yet</div><div class="sub">Start a recording or watch ~/.minutes/inbox/ for new audio files</div>';
-          meetingsScroll.appendChild(empty);
-        }
+        footer.style.display = 'none';
+        renderSetupEmptyState();
         return;
       }
 
@@ -2140,6 +2132,14 @@
     }
 
     function setupOnboarding(root) {
+      const hasModel = !!currentSetup?.hasModel;
+      if (hasModel) {
+        root.querySelector('#step-model').classList.add('done');
+        root.querySelector('#step-model-status').textContent = 'Done';
+        root.querySelector('#step-model-body').style.display = 'none';
+        root.querySelector('#step-first-artifact').classList.remove('disabled');
+      }
+
       root.querySelectorAll('.model-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const model = btn.dataset.model;
@@ -2169,8 +2169,8 @@
             root.querySelector('#step-model-status').textContent = 'Done';
             root.querySelector('#step-model-body').style.display = 'none';
 
-            root.querySelector('#step-ready').classList.remove('disabled');
-            root.querySelector('#btn-finish-setup').disabled = false;
+            currentSetup = { ...currentSetup, hasModel: true, needsSetup: false };
+            root.querySelector('#step-first-artifact').classList.remove('disabled');
           } catch (e) {
             clearInterval(progressTimer);
             fill.style.width = '0%';
@@ -2181,9 +2181,12 @@
         });
       });
 
-      root.querySelector('#btn-finish-setup').addEventListener('click', () => {
-        currentSetup = { ...currentSetup, needsSetup: false };
-        loadMeetings();
+      root.querySelector('#btn-start-first-recording').addEventListener('click', async () => {
+        try {
+          await invoke('cmd_start_recording');
+        } catch (e) {
+          console.error('First recording:', e);
+        }
       });
     }
 
@@ -2194,7 +2197,7 @@
         <div class="onboarding-content">
           <div class="onboarding-icon">🎙</div>
           <h2>Welcome to Minutes</h2>
-          <p class="onboarding-sub">Set up local transcription here, then this view becomes your meeting list.</p>
+          <p class="onboarding-sub">Download the model once, then create one short recording. The moment it saves, this becomes your real meeting list.</p>
           <div class="onboarding-steps">
             <div class="onboarding-step" id="step-model">
               <div class="step-header">
@@ -2215,14 +2218,23 @@
                 </div>
               </div>
             </div>
-            <div class="onboarding-step disabled" id="step-ready">
+            <div class="onboarding-step disabled" id="step-first-artifact">
               <div class="step-header">
                 <span class="step-num">2</span>
-                <span class="step-title">Ready to go</span>
+                <span class="step-title">Create your first artifact</span>
               </div>
               <div class="step-body">
-                <p>Record meetings, take voice memos, and search everything with AI.</p>
-                <button class="btn btn-primary" id="btn-finish-setup" disabled>Start Using Minutes</button>
+                <p>Make a quick 10-second test recording. Say one sentence, stop, and let Minutes save its first markdown artifact.</p>
+                <button class="btn btn-primary" id="btn-start-first-recording">Record a 10-second test</button>
+              </div>
+            </div>
+            <div class="onboarding-step disabled">
+              <div class="step-header">
+                <span class="step-num">3</span>
+                <span class="step-title">Watch it appear here</span>
+              </div>
+              <div class="step-body">
+                <p>As soon as the test recording finishes processing, this setup card disappears and your first saved artifact takes its place.</p>
               </div>
             </div>
           </div>
