@@ -102,6 +102,97 @@ pub fn update_tray_state(app: &tauri::AppHandle, is_recording: bool) {
     }
 }
 
+// ── Calendar items in tray menu ──────────────────────────────
+
+const MAX_CALENDAR_ITEMS: usize = 3;
+const CALENDAR_REFRESH_SECS: u64 = 60;
+const CALENDAR_LOOKAHEAD_MINUTES: u32 = 240; // 4 hours
+
+struct CalendarMenuState {
+    items: Vec<MenuItem<tauri::Wry>>,
+    separator: Option<MenuItem<tauri::Wry>>,
+}
+
+fn format_calendar_label(event: &minutes_core::calendar::CalendarEvent) -> String {
+    if event.minutes_until <= 0 {
+        format!("{} · now", event.title)
+    } else if event.minutes_until == 1 {
+        format!("{} · in 1 min", event.title)
+    } else if event.minutes_until >= 60 {
+        let h = event.minutes_until / 60;
+        let m = event.minutes_until % 60;
+        if m == 0 {
+            format!("{} · in {}h", event.title, h)
+        } else {
+            format!("{} · in {}h {}m", event.title, h, m)
+        }
+    } else {
+        format!("{} · in {} min", event.title, event.minutes_until)
+    }
+}
+
+fn refresh_calendar_items(
+    app: &tauri::AppHandle,
+    menu: &Menu<tauri::Wry>,
+    state: &std::sync::Mutex<CalendarMenuState>,
+) {
+    let mut state = match state.lock() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+
+    // Remove old items from menu
+    for item in state.items.drain(..) {
+        menu.remove(&item).ok();
+    }
+    if let Some(sep) = state.separator.take() {
+        menu.remove(&sep).ok();
+    }
+
+    // Query upcoming events
+    let all_events = minutes_core::calendar::upcoming_events(CALENDAR_LOOKAHEAD_MINUTES);
+    eprintln!(
+        "[calendar] queried {} upcoming events ({}min lookahead)",
+        all_events.len(),
+        CALENDAR_LOOKAHEAD_MINUTES
+    );
+    for e in &all_events {
+        eprintln!("[calendar]   {} — in {} min", e.title, e.minutes_until);
+    }
+    let events: Vec<_> = all_events
+        .into_iter()
+        .filter(|e| e.minutes_until >= 0)
+        .take(MAX_CALENDAR_ITEMS)
+        .collect();
+
+    if events.is_empty() {
+        return;
+    }
+
+    // Insert at position 2 (after "Open Minutes" + first separator)
+    for (i, event) in events.iter().enumerate() {
+        let label = format_calendar_label(event);
+        if let Ok(item) =
+            MenuItem::with_id(app, &format!("cal-{}", i), &label, true, None::<&str>)
+        {
+            if menu.insert(&item, 2 + i).is_ok() {
+                state.items.push(item);
+            }
+        }
+    }
+
+    // Separator after calendar items
+    if !state.items.is_empty() {
+        if let Ok(sep) =
+            MenuItem::with_id(app, "cal-sep", "──────────", false, None::<&str>)
+        {
+            if menu.insert(&sep, 2 + state.items.len()).is_ok() {
+                state.separator = Some(sep);
+            }
+        }
+    }
+}
+
 fn main() {
     let recording = Arc::new(AtomicBool::new(false));
     let starting = Arc::new(AtomicBool::new(false));
@@ -152,6 +243,12 @@ fn main() {
 
             // Create main window on launch
             show_main_window(app.handle());
+
+            // Calendar state for dynamic tray menu items
+            let cal_state = Arc::new(std::sync::Mutex::new(CalendarMenuState {
+                items: Vec::new(),
+                separator: None,
+            }));
 
             // Tray menu
             let open_item = MenuItem::with_id(app, "open", "Open Minutes", true, None::<&str>)?;
@@ -445,6 +542,48 @@ fn main() {
                                 std::process::exit(0);
                             }
                         }
+                        // Calendar event items — start recording on click
+                        "cal-0" | "cal-1" | "cal-2" => {
+                            if commands::recording_active(&recording) {
+                                return;
+                            }
+                            rec_item.set_text("Starting...").ok();
+                            rec_item.set_enabled(false).ok();
+                            quick_item.set_enabled(false).ok();
+                            stp_item.set_enabled(true).ok();
+                            let app_handle = app.clone();
+                            let app_done = app.clone();
+                            let rec = recording.clone();
+                            let starting = starting.clone();
+                            let sf = stop.clone();
+                            let processing = processing.clone();
+                            let processing_stage = processing_stage.clone();
+                            let latest_output = latest_output.clone();
+                            let completion_notifications_enabled =
+                                completion_notifications_enabled.clone();
+                            let ri = rec_item.clone();
+                            let si = stp_item.clone();
+                            std::thread::spawn(move || {
+                                commands::start_recording(
+                                    app_handle,
+                                    rec,
+                                    starting,
+                                    sf,
+                                    processing,
+                                    processing_stage,
+                                    latest_output,
+                                    completion_notifications_enabled,
+                                    None,
+                                    None,
+                                    minutes_core::CaptureMode::Meeting,
+                                );
+                                ri.set_text("Start Recording").ok();
+                                ri.set_enabled(true).ok();
+                                quick_item.set_enabled(true).ok();
+                                si.set_enabled(false).ok();
+                                update_tray_state(&app_done, false);
+                            });
+                        }
                         _ => {}
                     }
                 })
@@ -461,6 +600,19 @@ fn main() {
                     recording_for_detector,
                     processing_clone,
                 );
+            }
+
+            // Calendar items in tray menu — refresh every minute
+            {
+                let app_cal = app.handle().clone();
+                let menu_cal = menu.clone();
+                let cal_timer = cal_state.clone();
+                std::thread::spawn(move || {
+                    loop {
+                        refresh_calendar_items(&app_cal, &menu_cal, &cal_timer);
+                        std::thread::sleep(std::time::Duration::from_secs(CALENDAR_REFRESH_SECS));
+                    }
+                });
             }
 
             Ok(())

@@ -35,10 +35,12 @@ cp target/release/minutes ~/.local/bin/minutes # Install CLI
 open target/release/bundle/macos/Minutes.app   # Launch app
 ```
 
-**IMPORTANT**: After any code change, you must rebuild BOTH the CLI and the Tauri app:
+**IMPORTANT**: After any code change, you must rebuild ALL affected targets:
 - CLI changes: `cargo build --release -p minutes-cli && cp target/release/minutes ~/.local/bin/minutes`
 - Tauri changes: `cargo tauri build --bundles app` then relaunch Minutes.app
-- Both: `./scripts/build.sh` (add `--install` to copy .app to /Applications)
+- MCP server changes: `cd crates/mcp && npm run build` (then restart MCP client sessions)
+- All Rust + app: `./scripts/build.sh` (add `--install` to copy .app to /Applications)
+- **Don't forget the MCP server** — it's TypeScript, not Rust. `./scripts/build.sh` does NOT rebuild it. Always run `cd crates/mcp && npm run build` after touching `crates/mcp/src/index.ts`.
 
 ## Project Structure
 
@@ -49,7 +51,7 @@ minutes/
 ├── BUILD-STATUS.md            # Build progress tracker
 ├── Cargo.toml                 # Workspace root
 ├── crates/
-│   ├── core/src/              # 16 Rust modules — the engine
+│   ├── core/src/              # 17 Rust modules — the engine
 │   │   ├── capture.rs         # Audio capture (cpal)
 │   │   ├── transcribe.rs      # Whisper.cpp + symphonia format conversion
 │   │   ├── diarize.rs         # Pyannote subprocess
@@ -61,10 +63,12 @@ minutes/
 │   │   ├── search.rs          # Walk-dir search + action item queries
 │   │   ├── config.rs          # TOML config with compiled defaults
 │   │   ├── pid.rs             # PID file lifecycle (flock atomic)
+│   │   ├── events.rs          # Append-only JSONL event log for agent reactivity
 │   │   ├── logging.rs         # Structured JSON logging
 │   │   └── error.rs           # Per-module error types (thiserror)
-│   ├── cli/                   # CLI binary — 12 commands
-│   └── mcp/                   # MCP server — 8 tools for Claude Desktop
+│   ├── cli/                   # CLI binary — 15 commands
+│   ├── reader/                # Lightweight read-only meeting parser (no audio deps)
+│   └── mcp/                   # MCP server — 8 tools + 5 resources for Claude Desktop
 ├── tauri/                     # Tauri v2 menu bar app + singleton AI Assistant
 ├── .claude/plugins/minutes/   # Claude Code plugin — 11 skills + 1 agent + 2 hooks
 └── tests/integration/         # Integration tests (including real whisper tests)

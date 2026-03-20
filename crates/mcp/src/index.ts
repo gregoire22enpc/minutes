@@ -23,10 +23,15 @@ import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import { existsSync, realpathSync } from "fs";
 import { readFile } from "fs/promises";
-import { extname, isAbsolute, join, relative, resolve } from "path";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "path";
+import { fileURLToPath } from "url";
 import { homedir } from "os";
 
 const execFileAsync = promisify(execFile);
+
+// ESM-compatible __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ── Find the minutes binary ─────────────────────────────────
 
@@ -35,6 +40,7 @@ function findMinutesBinary(): string {
     join(__dirname, "..", "..", "..", "target", "release", "minutes"),
     join(__dirname, "..", "..", "..", "target", "debug", "minutes"),
     join(homedir(), ".cargo", "bin", "minutes"),
+    join(homedir(), ".local", "bin", "minutes"),
     "/opt/homebrew/bin/minutes",
     "/usr/local/bin/minutes",
   ];

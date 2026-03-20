@@ -7,8 +7,21 @@ export CXXFLAGS="-I$(xcrun --show-sdk-path)/usr/include/c++/v1"
 echo "=== Building CLI (release) ==="
 cargo build --release -p minutes-cli
 
+echo "=== Building calendar helper ==="
+swiftc -O \
+    -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+    -Xlinker scripts/calendar-helper-Info.plist \
+    scripts/calendar-events.swift -o target/release/calendar-events
+echo "  Built target/release/calendar-events"
+
 echo "=== Building Tauri app ==="
 cargo tauri build --bundles app
+
+echo "=== Embedding calendar helper in app bundle ==="
+APP_RESOURCES="target/release/bundle/macos/Minutes.app/Contents/Resources"
+mkdir -p "$APP_RESOURCES"
+cp -f target/release/calendar-events "$APP_RESOURCES/calendar-events"
+echo "  Embedded in $APP_RESOURCES/"
 
 echo "=== Installing CLI ==="
 mkdir -p ~/.local/bin
