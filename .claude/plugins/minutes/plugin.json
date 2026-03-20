@@ -10,7 +10,10 @@
     { "name": "minutes-note", "path": "skills/minutes-note/SKILL.md" },
     { "name": "minutes-verify", "path": "skills/minutes-verify/SKILL.md" },
     { "name": "minutes-setup", "path": "skills/minutes-setup/SKILL.md" },
-    { "name": "minutes-cleanup", "path": "skills/minutes-cleanup/SKILL.md" }
+    { "name": "minutes-cleanup", "path": "skills/minutes-cleanup/SKILL.md" },
+    { "name": "minutes-prep", "path": "skills/minutes-prep/SKILL.md" },
+    { "name": "minutes-debrief", "path": "skills/minutes-debrief/SKILL.md" },
+    { "name": "minutes-weekly", "path": "skills/minutes-weekly/SKILL.md" }
   ],
   "agents": [
     { "name": "meeting-analyst", "path": "agents/meeting-analyst.md" }

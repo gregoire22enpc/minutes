@@ -65,7 +65,7 @@ minutes/
 │   ├── cli/                   # CLI binary — 12 commands
 │   └── mcp/                   # MCP server — 8 tools for Claude Desktop
 ├── tauri/                     # Tauri v2 menu bar app + singleton AI Assistant
-├── .claude/plugins/minutes/   # Claude Code plugin — 8 skills + 1 agent + 1 hook
+├── .claude/plugins/minutes/   # Claude Code plugin — 11 skills + 1 agent + 1 hook
 └── tests/integration/         # Integration tests (including real whisper tests)
 ```
 

@@ -54,6 +54,20 @@ engine = "qmd"
 qmd_collection = "meetings"
 ```
 
+## Search coaching
+
+When the user's search query is vague or too broad, push back before running it:
+
+- **"everything"** or **"all meetings"** → "That'll return hundreds of results. What specifically are you looking for? A person, a topic, or a decision?"
+- **Single common word** like "meeting" or "project" → "That's too broad. Can you narrow it — a person's name, a specific topic, or a date range?"
+- **"that meeting"** or **"the one where"** → "Help me narrow it down. Do you remember who was in the meeting, roughly when it was, or a specific thing that was said?"
+
+Suggest search strategies based on what the user is looking for:
+- **Finding a person's input** → Search their name: `minutes search "Alex"`
+- **Finding a decision** → Search decision keywords: `minutes search "decided"` or `minutes search "agreed"`
+- **Finding an idea** → Search voice memos: `minutes search "idea" -t memo`
+- **Finding something from a time range** → Use `--since`: `minutes search "pricing" --since 2026-03-01`
+
 ## Tips for good searches
 
 - Search for **what people said**, not document titles: `"we should postpone the launch"` not `"launch delay meeting"`
