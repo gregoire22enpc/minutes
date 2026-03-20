@@ -33,10 +33,235 @@
       color: var(--text);
       height: 100vh;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       overflow: hidden;
       -webkit-user-select: none;
       user-select: none;
+    }
+
+    /* ── Split layout ── */
+    .app-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Recall panel (right side) ── */
+    .recall-panel {
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+      background: var(--bg);
+      opacity: 0;
+      transition: opacity 100ms ease-out;
+    }
+
+    .recall-panel.expanded {
+      width: 50%;
+      opacity: 1;
+      transition: opacity 100ms ease-out 150ms;
+    }
+
+    .recall-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+
+    .recall-header-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .recall-phase-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-secondary);
+    }
+
+    .recall-phase-dot.prep { background: var(--accent); }
+    .recall-phase-dot.listening {
+      background: var(--red);
+      animation: blink 1s step-end infinite;
+    }
+    .recall-phase-dot.debrief { background: var(--green); }
+
+    .recall-phase-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .recall-phase-label.prep { color: var(--accent); }
+    .recall-phase-label.listening { color: var(--red); }
+    .recall-phase-label.debrief { color: var(--green); }
+
+    .recall-context-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recall-header-actions {
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
+    }
+
+    .recall-close {
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .recall-close:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+    .recall-terminal {
+      flex: 1;
+      overflow: hidden;
+      padding: 4px;
+      background: #1c1c1e;
+    }
+
+
+    .recall-terminal.dimmed {
+      opacity: 0.5;
+      transition: opacity 200ms ease;
+    }
+
+    /* Quick note inside recall panel during recording */
+    .recall-note {
+      display: none;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .recall-note.active { display: block; }
+
+    .recall-note-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .recall-note-row input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .recall-note-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+    }
+
+    .recall-note-row input::placeholder { color: var(--text-tertiary); }
+
+    /* Loading / error states */
+    .recall-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .recall-status .processing-spinner {
+      width: 18px;
+      height: 18px;
+    }
+
+    .recall-exit-banner {
+      display: none;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-elevated);
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .recall-exit-banner.active { display: flex; align-items: center; justify-content: center; gap: 12px; }
+
+    /* Lifecycle badges on meeting items */
+    .meeting-badges {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .lifecycle-badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 999px;
+      letter-spacing: 0.2px;
+    }
+
+    .lifecycle-badge.prepped {
+      background: rgba(10, 132, 255, 0.12);
+      color: var(--accent);
+    }
+
+    .lifecycle-badge.recorded {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+
+    .lifecycle-badge.debriefed {
+      background: rgba(48, 209, 88, 0.12);
+      color: var(--green);
+    }
+
+    /* Pulsing nudge indicator on the Recall button */
+    .recall-nudge {
+      display: none;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: nudge-pulse 2s ease-in-out infinite;
+    }
+
+    .recall-nudge.active { display: inline-block; }
+
+    @keyframes nudge-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
     /* ── Header ── */
@@ -1140,6 +1365,7 @@
   </style>
 </head>
 <body>
+  <div class="app-left">
   <!-- Header -->
   <div class="header">
     <div class="brand">
@@ -1150,7 +1376,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-secondary btn-sm" id="btn-about">About</button>
+      <button class="btn btn-secondary btn-sm" id="btn-settings">Settings</button>
       <button class="header-chip readiness" id="btn-readiness">Readiness</button>
       <button class="header-chip" id="btn-recovery">Recovery <span id="recovery-count">0</span></button>
       <span class="status-pill" id="status-pill">idle</span>
@@ -1237,7 +1463,38 @@
     <div class="footer-actions">
       <button class="btn btn-primary" id="btn-record">Start Recording</button>
       <button class="btn btn-secondary" id="btn-quick-thought">Quick Thought</button>
-      <button class="btn btn-secondary" id="btn-assistant">AI Assistant</button>
+      <button class="btn btn-secondary" id="btn-assistant" aria-expanded="false">Recall <span class="recall-nudge" id="recall-nudge" aria-label="Recall has new content"></span></button>
+    </div>
+  </div>
+  </div><!-- end .app-left -->
+
+  <!-- ── Recall panel (right side, embedded terminal) ── -->
+  <div class="recall-panel" id="recall-panel">
+    <div class="recall-header">
+      <div class="recall-header-info">
+        <div class="recall-phase-dot" id="recall-dot" aria-label="Phase: Recall"></div>
+        <span class="recall-phase-label" id="recall-phase-label">Recall</span>
+        <span class="recall-context-label" id="recall-context-label"></span>
+      </div>
+      <div class="recall-header-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-recall-end" style="display:none;">End Session</button>
+        <button class="recall-close" id="btn-recall-close" title="Close panel">&times;</button>
+      </div>
+    </div>
+    <div class="recall-note" id="recall-note">
+      <div class="recall-note-row">
+        <input type="text" id="recall-note-input" placeholder="Quick note..." />
+        <button class="btn btn-secondary btn-sm" id="btn-recall-note-save">Save</button>
+      </div>
+    </div>
+    <div class="recall-status" id="recall-loading" style="display:none;">
+      <div class="processing-spinner" aria-hidden="true"></div>
+      <span>Starting Recall...</span>
+    </div>
+    <div class="recall-terminal" id="recall-terminal-container"></div>
+    <div class="recall-exit-banner" id="recall-exit-banner">
+      Session ended.
+      <button class="btn btn-secondary btn-sm" id="btn-recall-restart">Restart</button>
     </div>
   </div>
 
@@ -1350,6 +1607,126 @@
     </div>
   </div>
 
+  <!-- Settings -->
+  <div class="about-overlay" id="settings-overlay">
+    <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="settings-title" style="width: min(580px, 100%); max-height: calc(100vh - 40px);">
+      <div class="about-top">
+        <h2 id="settings-title" style="font-size: 20px; font-family: var(--font-display);">Settings</h2>
+        <button class="btn btn-secondary btn-sm" id="btn-settings-close">Close</button>
+      </div>
+
+      <!-- General -->
+      <div style="margin-bottom: 16px;">
+        <div class="about-item-title">GENERAL</div>
+        <div class="about-controls">
+          <div class="about-controls-copy">Show native completion notifications</div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-notifications">On</button>
+        </div>
+        <div class="about-controls">
+          <div class="about-controls-copy">Play sound cues for start, stop, and complete</div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-cues">On</button>
+        </div>
+        <div class="about-controls">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">Global hotkey for quick-thought capture</div>
+            <select class="shortcut-select" id="settings-hotkey-shortcut" style="margin-top: 6px;"></select>
+            <div class="about-controls-meta" id="settings-hotkey-status"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-hotkey">Off</button>
+        </div>
+      </div>
+
+      <!-- Transcription -->
+      <div style="margin-bottom: 16px;">
+        <div class="about-item-title">TRANSCRIPTION</div>
+        <div class="about-controls">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">Whisper model</div>
+            <select id="settings-whisper-model" style="margin-top: 6px; width: 100%; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text); font-size: 13px;">
+              <option value="tiny">tiny — 75 MB, fast, lower quality</option>
+              <option value="small">small — 466 MB, good quality (recommended)</option>
+              <option value="medium">medium — 1.5 GB, great quality</option>
+              <option value="large-v3">large-v3 — 3.1 GB, best quality</option>
+            </select>
+            <div class="about-controls-meta" id="settings-model-status"></div>
+          </div>
+        </div>
+        <div class="about-controls">
+          <div class="about-controls-copy">Speaker diarization (identify who said what)</div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-diarization">Off</button>
+        </div>
+      </div>
+
+      <!-- Summarization -->
+      <div style="margin-bottom: 16px;">
+        <div class="about-item-title">SUMMARIZATION</div>
+        <div class="about-controls">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">LLM engine for automatic summaries</div>
+            <select id="settings-summarization-engine" style="margin-top: 6px; width: 100%; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text); font-size: 13px;">
+              <option value="none">None — Claude summarizes via MCP when you ask</option>
+              <option value="claude">Claude API (requires ANTHROPIC_API_KEY)</option>
+              <option value="openai">OpenAI API (requires OPENAI_API_KEY)</option>
+              <option value="ollama">Ollama (local, free)</option>
+            </select>
+            <div class="about-controls-meta" id="settings-summarization-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy -->
+      <div style="margin-bottom: 16px;">
+        <div class="about-item-title">PRIVACY</div>
+        <div class="about-controls">
+          <div class="about-controls-copy">Hide windows from screen sharing</div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-screen-share">On</button>
+        </div>
+        <div class="about-controls">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">Capture screen context during recordings</div>
+            <div class="about-controls-meta">Screenshots sent to vision LLM for context. Requires Screen Recording permission.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm toggle-btn" id="settings-screen-context">Off</button>
+        </div>
+        <div class="about-controls" id="settings-screen-interval-row" style="display: none;">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">Screenshot interval</div>
+            <select id="settings-screen-interval" style="margin-top: 6px; width: 100%; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text); font-size: 13px;">
+              <option value="15">Every 15 seconds</option>
+              <option value="30">Every 30 seconds</option>
+              <option value="60">Every 60 seconds</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recall Agent -->
+      <div style="margin-bottom: 16px;">
+        <div class="about-item-title">RECALL AGENT</div>
+        <div class="about-controls">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">AI agent for the Recall panel</div>
+            <select id="settings-agent" style="margin-top: 6px; width: 100%; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text); font-size: 13px;">
+            </select>
+            <div class="about-controls-meta" id="settings-agent-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Storage -->
+      <div style="margin-bottom: 8px;">
+        <div class="about-item-title">STORAGE</div>
+        <div id="settings-storage-info" style="font-size: 13px; color: var(--text-secondary); line-height: 1.8; padding: 0 4px;">
+          Loading...
+        </div>
+      </div>
+
+      <div class="about-footer" style="font-size: 11px;">
+        Config file: <span id="settings-config-path" style="font-family: var(--font-mono); opacity: 0.7;"></span>
+      </div>
+    </div>
+  </div>
+
   <style>
     .onboarding-content {
       width: 100%;
@@ -1444,6 +1821,11 @@
 
     .progress-text { font-size: 11px; color: var(--text-secondary); }
   </style>
+
+  <link rel="stylesheet" href="vendor/xterm/xterm.css">
+  <script src="vendor/xterm/xterm.js"></script>
+  <script src="vendor/xterm/xterm-addon-fit.js"></script>
+  <script src="vendor/xterm/minutes-theme.js"></script>
 
   <script>
     const { invoke } = window.__TAURI__.core;
@@ -2233,6 +2615,20 @@
             info.appendChild(snippet);
           }
 
+          // Lifecycle badges (prepped / recorded / debriefed)
+          if (m.badges && m.badges.length > 0) {
+            const badgeRow = document.createElement('div');
+            badgeRow.className = 'meeting-badges';
+            for (const b of m.badges) {
+              const lb = document.createElement('span');
+              lb.className = 'lifecycle-badge ' + b;
+              lb.textContent = b;
+              lb.setAttribute('aria-label', b);
+              badgeRow.appendChild(lb);
+            }
+            info.appendChild(badgeRow);
+          }
+
           const badge = document.createElement('span');
           badge.className = 'meeting-badge' + (m.content_type === 'memo' ? ' memo' : '');
           badge.textContent = m.content_type || 'meeting';
@@ -2452,8 +2848,17 @@
       }
     });
     document.addEventListener('keydown', (e) => {
+      // Cmd+Shift+R toggles Recall panel (handler defined in Recall section below)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'r') {
+        e.preventDefault();
+        if (typeof toggleRecallPanel === 'function') toggleRecallPanel();
+        return;
+      }
       if (e.key === 'Escape' && aboutOverlay.classList.contains('active')) {
         closeAbout();
+      }
+      if (e.key === 'Escape' && settingsOverlay.classList.contains('active')) {
+        closeSettings();
       }
       if (e.key === 'Escape' && readinessOverlay.classList.contains('active')) {
         closeReadiness();
@@ -2474,23 +2879,358 @@
       }
     });
 
-    // ── AI Assistant / Discuss ──
-    document.getElementById('btn-assistant').addEventListener('click', async () => {
+    // ══════════════════════════════════════════════════════════════
+    // ── Recall panel ──
+    // ══════════════════════════════════════════════════════════════
+
+    const { getCurrentWindow } = window.__TAURI__.window;
+    const currentWindow = getCurrentWindow();
+
+    const recallPanel = document.getElementById('recall-panel');
+    const recallDot = document.getElementById('recall-dot');
+    const recallPhaseLabel = document.getElementById('recall-phase-label');
+    const recallContextLabel = document.getElementById('recall-context-label');
+    const recallTerminalContainer = document.getElementById('recall-terminal-container');
+    const recallLoading = document.getElementById('recall-loading');
+    const recallNote = document.getElementById('recall-note');
+    const recallNoteInput = document.getElementById('recall-note-input');
+    const recallExitBanner = document.getElementById('recall-exit-banner');
+    const recallNudge = document.getElementById('recall-nudge');
+    const recallEndBtn = document.getElementById('btn-recall-end');
+    const assistantBtn = document.getElementById('btn-assistant');
+
+    const COLLAPSED_WIDTH = 480;
+    const EXPANDED_WIDTH = 960;
+    const SESSION_ID = 'assistant';
+
+    let recallExpanded = false;
+    let recallTerminal = null;
+    let recallFitAddon = null;
+    let recallPtyAlive = false;
+    let recallPhase = 'recall';
+    let userExplicitlyCollapsed = false;
+    let recallInitialized = false;
+    let expandAnimating = false;
+
+    // ── Phase management ──
+    function setRecallPhase(phase, context) {
+      recallPhase = phase;
+      const dotClasses = ['prep', 'listening', 'debrief'];
+      recallDot.classList.remove(...dotClasses);
+      recallPhaseLabel.classList.remove(...dotClasses);
+      if (phase !== 'recall') {
+        recallDot.classList.add(phase);
+        recallPhaseLabel.classList.add(phase);
+      }
+      const labels = { recall: 'Recall', prep: 'Prep', listening: 'Listening', debrief: 'Debrief' };
+      recallPhaseLabel.textContent = labels[phase] || 'Recall';
+      recallContextLabel.textContent = context ? `\u2014 ${context}` : '';
+      recallDot.setAttribute('aria-label', 'Phase: ' + (labels[phase] || 'Recall'));
+
+      recallTerminalContainer.classList.toggle('dimmed', phase === 'listening');
+      recallNote.classList.toggle('active', phase === 'listening');
+    }
+
+    // ── xterm.js initialization ──
+    function initRecallTerminal() {
+      if (recallInitialized) return;
+      recallInitialized = true;
+
+      recallTerminal = new Terminal({
+        theme: window.MINUTES_XTERM_THEME,
+        fontFamily: "'SF Mono', Menlo, monospace",
+        fontSize: 13,
+        lineHeight: 1.2,
+        cursorBlink: true,
+        cursorStyle: 'bar',
+        scrollback: 10000,
+        allowProposedApi: true,
+      });
+
+      recallFitAddon = new FitAddon.FitAddon();
+      recallTerminal.loadAddon(recallFitAddon);
+      recallTerminal.open(recallTerminalContainer);
+
+      let fitTimeout;
+      const resizeObserver = new ResizeObserver(() => {
+        if (!recallExpanded) return;
+        clearTimeout(fitTimeout);
+        fitTimeout = setTimeout(() => {
+          recallFitAddon.fit();
+          if (recallPtyAlive) {
+            invoke('cmd_pty_resize', {
+              sessionId: SESSION_ID,
+              cols: recallTerminal.cols,
+              rows: recallTerminal.rows,
+            }).catch(() => {});
+          }
+        }, 100);
+      });
+      resizeObserver.observe(recallTerminalContainer);
+
+      recallTerminal.onData((data) => {
+        if (!recallPtyAlive) return;
+        invoke('cmd_pty_input', { sessionId: SESSION_ID, data }).catch(console.error);
+      });
+    }
+
+    // ── PTY event listeners (registered once) ──
+    let ptyListenersRegistered = false;
+    async function registerPtyListeners() {
+      if (ptyListenersRegistered) return;
+      ptyListenersRegistered = true;
+
+      await currentWindow.listen('pty:data:' + SESSION_ID, (event) => {
+        if (!recallTerminal) return;
+        const raw = atob(event.payload);
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) {
+          bytes[i] = raw.charCodeAt(i);
+        }
+        recallTerminal.write(bytes);
+        const wasHidden = recallTerminalContainer.style.display === 'none';
+        recallLoading.style.display = 'none';
+        recallTerminalContainer.style.display = '';
+        // Re-fit after first reveal so xterm measures the real container width
+        if (wasHidden && recallFitAddon) {
+          requestAnimationFrame(() => recallFitAddon.fit());
+        }
+      });
+
+      await currentWindow.listen('pty:exit:' + SESSION_ID, () => {
+        recallPtyAlive = false;
+        recallExitBanner.classList.add('active');
+        recallEndBtn.style.display = 'none';
+      });
+    }
+
+    // ── Expand / collapse with window resize ──
+    async function expandRecallPanel() {
+      if (recallExpanded || expandAnimating) return;
+      expandAnimating = true;
+      userExplicitlyCollapsed = false;
+      recallNudge.classList.remove('active');
+
       try {
-        await invoke('cmd_spawn_terminal', { mode: 'assistant' });
+        // outerPosition() returns physical pixels; convert to logical
+        // so setPosition(LogicalPosition) doesn't shift on Retina displays.
+        const scaleFactor = await currentWindow.scaleFactor();
+        const pos = await currentWindow.outerPosition();
+        const logicalX = pos.x / scaleFactor;
+        const logicalY = pos.y / scaleFactor;
+        const screenWidth = window.screen.availWidth;
+        const newRight = logicalX + EXPANDED_WIDTH;
+        if (newRight > screenWidth) {
+          const shiftX = Math.max(0, logicalX - (newRight - screenWidth));
+          await currentWindow.setPosition(new window.__TAURI__.window.LogicalPosition(shiftX, logicalY));
+        }
       } catch (e) {
-        console.error('Assistant:', e);
+        console.error('Screen edge check:', e);
+      }
+
+      await currentWindow.setSize(
+        new window.__TAURI__.window.LogicalSize(EXPANDED_WIDTH, 640)
+      );
+
+      recallPanel.classList.add('expanded');
+      assistantBtn.setAttribute('aria-expanded', 'true');
+      recallExpanded = true;
+      expandAnimating = false;
+
+      localStorage.setItem('minutes.recallExpanded', 'true');
+
+      initRecallTerminal();
+      await registerPtyListeners();
+
+      setTimeout(() => {
+        if (recallFitAddon) recallFitAddon.fit();
+        if (recallTerminal) recallTerminal.focus();
+      }, 260);
+    }
+
+    async function collapseRecallPanel() {
+      if (!recallExpanded || expandAnimating) return;
+      expandAnimating = true;
+
+      recallPanel.classList.remove('expanded');
+      assistantBtn.setAttribute('aria-expanded', 'false');
+
+      setTimeout(async () => {
+        await currentWindow.setSize(
+          new window.__TAURI__.window.LogicalSize(COLLAPSED_WIDTH, 640)
+        );
+        recallExpanded = false;
+        expandAnimating = false;
+        localStorage.setItem('minutes.recallExpanded', 'false');
+      }, 120);
+    }
+
+    async function toggleRecallPanel() {
+      if (recallExpanded) {
+        userExplicitlyCollapsed = true;
+        await collapseRecallPanel();
+      } else {
+        await openRecall('assistant');
+      }
+    }
+
+    // ── Open Recall (spawn PTY if needed, then expand) ──
+    async function openRecall(mode, meetingPath) {
+      recallLoading.style.display = 'flex';
+      recallTerminalContainer.style.display = 'none';
+      recallExitBanner.classList.remove('active');
+
+      await expandRecallPanel();
+
+      try {
+        const opts = { mode };
+        if (meetingPath) opts.meetingPath = meetingPath;
+        await invoke('cmd_spawn_terminal', opts);
+        recallPtyAlive = true;
+        recallEndBtn.style.display = '';
+      } catch (e) {
+        const msg = typeof e === 'string' ? e : String(e);
+        if (msg.includes('already running') || msg.includes('Already')) {
+          recallPtyAlive = true;
+          recallLoading.style.display = 'none';
+          recallTerminalContainer.style.display = '';
+          recallEndBtn.style.display = '';
+          // Re-fit after reveal so xterm uses the full panel width
+          if (recallFitAddon) {
+            requestAnimationFrame(() => {
+              recallFitAddon.fit();
+              if (recallPtyAlive && recallTerminal) {
+                invoke('cmd_pty_resize', {
+                  sessionId: SESSION_ID,
+                  cols: recallTerminal.cols,
+                  rows: recallTerminal.rows,
+                }).catch(() => {});
+              }
+            });
+          }
+        } else {
+          console.error('Recall spawn:', e);
+          recallLoading.querySelector('span').textContent = 'Could not start: ' + msg;
+        }
+      }
+    }
+
+    // ── Auto-expand triggers ──
+    function autoExpandRecall(mode, context) {
+      if (userExplicitlyCollapsed) {
+        recallNudge.classList.add('active');
+        return;
+      }
+      openRecall(mode === 'debrief' ? 'assistant' : mode);
+      if (mode === 'prep') setRecallPhase('prep', context);
+      else if (mode === 'debrief') setRecallPhase('debrief', context);
+    }
+
+    // ── Listen for recall:expand events from Rust backend ──
+    currentWindow.listen('recall:expand', (event) => {
+      const { title, mode } = event.payload;
+      const context = (title || '').replace('Minutes Assistant', '').replace('Discussing: ', '').trim();
+      if (mode === 'meeting') {
+        setRecallPhase('debrief', context);
+      } else {
+        setRecallPhase('recall', context || null);
+      }
+      recallPtyAlive = true;
+      recallLoading.style.display = 'none';
+      recallTerminalContainer.style.display = '';
+      recallEndBtn.style.display = '';
+    });
+
+    // ── Button handlers ──
+    assistantBtn.addEventListener('click', () => toggleRecallPanel());
+
+    document.getElementById('btn-recall-close').addEventListener('click', () => {
+      userExplicitlyCollapsed = true;
+      collapseRecallPanel();
+    });
+
+    recallEndBtn.addEventListener('click', async () => {
+      try {
+        await invoke('cmd_pty_kill', { sessionId: SESSION_ID });
+        recallPtyAlive = false;
+      } catch (e) {
+        console.error('End session:', e);
       }
     });
 
+    document.getElementById('btn-recall-restart').addEventListener('click', async () => {
+      recallExitBanner.classList.remove('active');
+      recallInitialized = false;
+      while (recallTerminalContainer.firstChild) {
+        recallTerminalContainer.removeChild(recallTerminalContainer.firstChild);
+      }
+      await openRecall('assistant');
+    });
+
+    // Quick note inside recall panel
+    async function saveRecallNote() {
+      const text = recallNoteInput.value.trim();
+      if (!text) return;
+      try {
+        await invoke('cmd_add_note', { text });
+        recallNoteInput.value = '';
+      } catch (e) {
+        console.error('Recall note:', e);
+      }
+    }
+
+    document.getElementById('btn-recall-note-save').addEventListener('click', saveRecallNote);
+    recallNoteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveRecallNote(); }
+    });
+
+    // ── Discuss with AI (from meeting detail) ──
     document.getElementById('btn-discuss-ai').addEventListener('click', async () => {
       if (!currentMeetingPath) return;
-      try {
-        await invoke('cmd_spawn_terminal', { mode: 'meeting', meetingPath: currentMeetingPath });
-      } catch (e) {
-        console.error('Discuss:', e);
-      }
+      closeDetailView();
+      await openRecall('meeting', currentMeetingPath);
+      const title = currentMeetingDetail ? currentMeetingDetail.title : 'Meeting';
+      setRecallPhase('debrief', title);
     });
+
+    // ── Recording-aware phase transitions ──
+    const originalCheckStatus = checkStatus;
+    let prevRecording = false;
+    let prevProcessing = false;
+    checkStatus = async function() {
+      await originalCheckStatus();
+
+      if (recallExpanded) {
+        if (isRecording && !prevRecording) {
+          setRecallPhase('listening', null);
+          quickNote.classList.remove('active');
+        } else if (!isRecording && prevRecording && !isProcessing) {
+          setRecallPhase('debrief', null);
+        } else if (!isRecording && !isProcessing && recallPhase === 'listening') {
+          setRecallPhase('recall', null);
+        }
+      }
+
+      if (!isRecording && prevRecording && !isProcessing) {
+        if (!recallExpanded) {
+          autoExpandRecall('debrief', null);
+        }
+      }
+
+      prevRecording = isRecording;
+      prevProcessing = isProcessing;
+    };
+
+    // ── Upcoming meeting auto-expand ──
+    const originalCheckUpcoming = checkUpcoming;
+    checkUpcoming = async function() {
+      await originalCheckUpcoming();
+      const upcomingEl = document.getElementById('upcoming');
+      if (upcomingEl && upcomingEl.style.display === 'flex' && !recallExpanded && !isRecording) {
+        const title = document.getElementById('upcoming-title').textContent;
+        autoExpandRecall('prep', title);
+      }
+    };
 
     // ── Init ──
     const storedNotify = localStorage.getItem('minutes.notifyOnCompletion');
@@ -2515,7 +3255,12 @@
     loadRecoveryItems();
     checkUpcoming();
     setInterval(() => { if (!pollInterval) checkStatus(); }, 2000);
-    setInterval(checkUpcoming, 60000); // Check calendar every minute
+    setInterval(checkUpcoming, 60000);
+
+    // Restore panel state from previous session
+    if (localStorage.getItem('minutes.recallExpanded') === 'true') {
+      setTimeout(() => openRecall('assistant'), 500);
+    }
   </script>
 </body>
 </html>

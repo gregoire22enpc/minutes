@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, SystemTime};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub struct AppState {
     pub recording: Arc<AtomicBool>,
@@ -1221,9 +1221,40 @@ pub fn cmd_status(state: tauri::State<AppState>) -> serde_json::Value {
     })
 }
 
+/// Scan ~/.minutes/preps/ for existing prep files and return a set of
+/// first-name slugs that have been prepped (for lifecycle badge display).
+fn scan_prep_slugs() -> std::collections::HashSet<String> {
+    let preps_dir = Config::minutes_dir().join("preps");
+    let mut slugs = std::collections::HashSet::new();
+    if let Ok(entries) = std::fs::read_dir(&preps_dir) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.ends_with(".prep.md") {
+                // slug format: YYYY-MM-DD-{name}.prep.md → extract {name}
+                if let Some(stem) = name.strip_suffix(".prep.md") {
+                    // skip date prefix (11 chars: "YYYY-MM-DD-")
+                    if stem.len() > 11 {
+                        slugs.insert(stem[11..].to_lowercase());
+                    }
+                }
+            }
+        }
+    }
+    slugs
+}
+
+/// Check if a meeting's attendees include anyone with a matching prep file.
+fn meeting_has_prep(attendees: &[String], prep_slugs: &std::collections::HashSet<String>) -> bool {
+    attendees.iter().any(|name| {
+        let first = name.split_whitespace().next().unwrap_or(name);
+        prep_slugs.contains(&first.to_lowercase())
+    })
+}
+
 #[tauri::command]
 pub fn cmd_list_meetings(limit: Option<usize>) -> serde_json::Value {
     let config = Config::load();
+    let prep_slugs = scan_prep_slugs();
     let filters = minutes_core::search::SearchFilters {
         content_type: None,
         since: None,
@@ -1234,10 +1265,55 @@ pub fn cmd_list_meetings(limit: Option<usize>) -> serde_json::Value {
     match minutes_core::search::search("", &config, &filters) {
         Ok(results) => {
             let limited: Vec<_> = results.into_iter().take(limit.unwrap_or(20)).collect();
-            serde_json::to_value(&limited).unwrap_or(serde_json::json!([]))
+            let enriched: Vec<serde_json::Value> = limited
+                .iter()
+                .map(|r| {
+                    let mut val =
+                        serde_json::to_value(r).unwrap_or(serde_json::json!({}));
+                    // Read frontmatter to check for lifecycle badges
+                    let badges = compute_lifecycle_badges(&r.path, &prep_slugs);
+                    val["badges"] = serde_json::json!(badges);
+                    val
+                })
+                .collect();
+            serde_json::json!(enriched)
         }
         Err(_) => serde_json::json!([]),
     }
+}
+
+/// Compute lifecycle badge strings for a meeting artifact.
+fn compute_lifecycle_badges(
+    path: &std::path::Path,
+    prep_slugs: &std::collections::HashSet<String>,
+) -> Vec<String> {
+    let mut badges = Vec::new();
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return badges,
+    };
+    let (fm_str, body) = minutes_core::markdown::split_frontmatter(&content);
+    let fm: Result<minutes_core::markdown::Frontmatter, _> =
+        serde_yaml::from_str(&format!("---\n{}\n---", fm_str));
+
+    if let Ok(fm) = fm {
+        if meeting_has_prep(&fm.attendees, prep_slugs) {
+            badges.push("prepped".into());
+        }
+        // "recorded" badge: all meetings/memos with transcripts are recorded
+        if body.contains("## Transcript") || body.contains("## Summary") {
+            badges.push("recorded".into());
+        }
+        // "debriefed" badge: has decisions or resolved intents (added by debrief)
+        if !fm.decisions.is_empty()
+            || fm.intents.iter().any(|i| i.status != "open")
+        {
+            badges.push("debriefed".into());
+        }
+    }
+
+    badges
 }
 
 #[tauri::command]
@@ -1610,9 +1686,14 @@ pub fn spawn_terminal(
 
     if manager.assistant_session_id().is_some() {
         manager.set_session_title(crate::pty::ASSISTANT_SESSION_ID, title.clone())?;
-        if let Some(command) = manager.session_command(crate::pty::ASSISTANT_SESSION_ID) {
-            let prompt = context_switch_prompt(&command, mode, &title);
-            manager.write_input(crate::pty::ASSISTANT_SESSION_ID, prompt.as_bytes())?;
+        // Only send a context switch prompt when actively switching to a
+        // meeting (not when merely re-opening the panel in assistant mode,
+        // which would inject unwanted text into Claude Code's input).
+        if mode == "meeting" {
+            if let Some(command) = manager.session_command(crate::pty::ASSISTANT_SESSION_ID) {
+                let prompt = context_switch_prompt(&command, mode, &title);
+                manager.write_input(crate::pty::ASSISTANT_SESSION_ID, prompt.as_bytes())?;
+            }
         }
     } else {
         let agent_name = agent_override.unwrap_or(&config.assistant.agent);
@@ -1633,6 +1714,7 @@ pub fn spawn_terminal(
                 cwd: workspace.clone(),
                 context_dir: workspace.clone(),
                 title: title.clone(),
+                target_window: "main".into(),
             },
             120,
             30,
@@ -1641,7 +1723,19 @@ pub fn spawn_terminal(
 
     drop(manager);
 
-    crate::show_terminal_window(app, crate::pty::ASSISTANT_SESSION_ID, &title);
+    // Emit recall:expand event to the main window instead of opening a
+    // separate terminal window. The JS in index.html handles the panel
+    // expand animation and xterm.js initialisation.
+    if let Some(win) = app.get_webview_window("main") {
+        win.show().ok();
+        win.set_focus().ok();
+        app.emit_to(
+            "main",
+            "recall:expand",
+            serde_json::json!({ "title": title, "mode": mode }),
+        )
+        .ok();
+    }
 
     Ok((crate::pty::ASSISTANT_SESSION_ID.into(), title))
 }
@@ -1720,6 +1814,154 @@ pub fn cmd_terminal_info(state: tauri::State<AppState>, session_id: String) -> T
         .and_then(|manager| manager.session_title(&session_id))
         .unwrap_or_else(|| "Minutes Assistant".into());
     TerminalInfo { title }
+}
+
+// ── Settings commands ─────────────────────────────────────────
+
+#[tauri::command]
+pub fn cmd_get_settings() -> serde_json::Value {
+    let config = Config::load();
+    let path = Config::config_path();
+
+    // Check env vars for API key status
+    let anthropic_key_set = std::env::var("ANTHROPIC_API_KEY").is_ok();
+    let openai_key_set = std::env::var("OPENAI_API_KEY").is_ok();
+
+    // Check Ollama reachability
+    let ollama_reachable = ureq::Agent::new_with_config(
+        ureq::config::Config::builder()
+            .timeout_global(Some(std::time::Duration::from_secs(2)))
+            .build(),
+    )
+    .get(&format!("{}/api/tags", config.summarization.ollama_url))
+    .call()
+    .is_ok();
+
+    // Check which whisper model is downloaded
+    let model_path = config.transcription.model_path.clone();
+    let downloaded_models: Vec<String> = ["tiny", "small", "medium", "large-v3"]
+        .iter()
+        .filter(|m| {
+            let pattern = format!("ggml-{}", m);
+            model_path
+                .read_dir()
+                .into_iter()
+                .flatten()
+                .flatten()
+                .any(|e| {
+                    e.file_name()
+                        .to_str()
+                        .map(|n| n.contains(&pattern))
+                        .unwrap_or(false)
+                })
+        })
+        .map(|s| s.to_string())
+        .collect();
+
+    serde_json::json!({
+        "config_path": path.display().to_string(),
+        "transcription": {
+            "model": config.transcription.model,
+            "downloaded_models": downloaded_models,
+        },
+        "diarization": {
+            "engine": config.diarization.engine,
+        },
+        "summarization": {
+            "engine": config.summarization.engine,
+            "ollama_model": config.summarization.ollama_model,
+            "ollama_url": config.summarization.ollama_url,
+            "anthropic_key_set": anthropic_key_set,
+            "openai_key_set": openai_key_set,
+            "ollama_reachable": ollama_reachable,
+        },
+        "screen_context": {
+            "enabled": config.screen_context.enabled,
+            "interval_secs": config.screen_context.interval_secs,
+            "keep_after_summary": config.screen_context.keep_after_summary,
+        },
+        "assistant": {
+            "agent": config.assistant.agent,
+            "agent_args": config.assistant.agent_args,
+        },
+    })
+}
+
+#[tauri::command]
+pub fn cmd_set_setting(section: String, key: String, value: String) -> Result<String, String> {
+    let mut config = Config::load();
+
+    match (section.as_str(), key.as_str()) {
+        // Transcription
+        ("transcription", "model") => config.transcription.model = value.clone(),
+
+        // Diarization
+        ("diarization", "engine") => config.diarization.engine = value.clone(),
+
+        // Summarization
+        ("summarization", "engine") => config.summarization.engine = value.clone(),
+        ("summarization", "ollama_model") => config.summarization.ollama_model = value.clone(),
+        ("summarization", "ollama_url") => config.summarization.ollama_url = value.clone(),
+
+        // Screen context
+        ("screen_context", "enabled") => {
+            config.screen_context.enabled = value == "true";
+        }
+        ("screen_context", "interval_secs") => {
+            config.screen_context.interval_secs = value
+                .parse()
+                .map_err(|_| "interval_secs must be a number")?;
+        }
+        ("screen_context", "keep_after_summary") => {
+            config.screen_context.keep_after_summary = value == "true";
+        }
+
+        // Assistant
+        ("assistant", "agent") => config.assistant.agent = value.clone(),
+
+        _ => return Err(format!("Unknown setting: {}.{}", section, key)),
+    }
+
+    config
+        .save()
+        .map_err(|e| format!("Failed to save config: {}", e))?;
+
+    Ok(format!("Set {}.{} = {}", section, key, value))
+}
+
+#[tauri::command]
+pub fn cmd_get_storage_stats() -> serde_json::Value {
+    let config = Config::load();
+
+    fn walk_size(path: &std::path::Path) -> (u64, usize) {
+        let mut total_bytes = 0u64;
+        let mut file_count = 0usize;
+        for entry in walkdir::WalkDir::new(path).into_iter().flatten() {
+            if entry.file_type().is_file() {
+                total_bytes += entry.metadata().map(|m| m.len()).unwrap_or(0);
+                file_count += 1;
+            }
+        }
+        (total_bytes, file_count)
+    }
+
+    let meetings_dir = &config.output_dir;
+    let memos_dir = config.output_dir.join("memos");
+    let models_dir = &config.transcription.model_path;
+    let screens_dir = Config::minutes_dir().join("screens");
+
+    let (meetings_bytes, meetings_count) = walk_size(meetings_dir);
+    let (memos_bytes, memos_count) = walk_size(&memos_dir);
+    let (models_bytes, _) = walk_size(models_dir);
+    let (screens_bytes, screens_count) = walk_size(&screens_dir);
+
+    serde_json::json!({
+        "meetings": { "bytes": meetings_bytes, "count": meetings_count },
+        "memos": { "bytes": memos_bytes, "count": memos_count },
+        "models": { "bytes": models_bytes },
+        "screens": { "bytes": screens_bytes, "count": screens_count },
+        "total_bytes": meetings_bytes + memos_bytes + models_bytes + screens_bytes,
+    })
 }
 
 #[cfg(test)]

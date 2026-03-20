@@ -18,6 +18,8 @@ libc = "0.2"
 portable-pty = "0.9"
 base64 = "0.22"
 tauri-plugin-pty = "0.1"
+walkdir = { workspace = true }
+ureq = { workspace = true }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

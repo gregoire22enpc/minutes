@@ -271,6 +271,25 @@ impl Config {
         }
     }
 
+    /// Save config to the standard config file location.
+    /// Creates the config directory and file if they don't exist.
+    pub fn save(&self) -> std::io::Result<()> {
+        let path = Self::config_path();
+        Self::save_to(self, &path)
+    }
+
+    /// Save config to a specific path.
+    pub fn save_to(&self, path: &Path) -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let contents = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::other(format!("TOML serialize: {}", e)))?;
+        std::fs::write(path, contents)?;
+        tracing::info!(path = %path.display(), "config saved");
+        Ok(())
+    }
+
     /// Ensure required directories exist.
     pub fn ensure_dirs(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(&self.output_dir)?;

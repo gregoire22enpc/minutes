@@ -196,7 +196,7 @@ fn main() {
                 None::<&str>,
             )?;
             let assistant_item =
-                MenuItem::with_id(app, "assistant", "AI Assistant", true, None::<&str>)?;
+                MenuItem::with_id(app, "assistant", "Recall", true, None::<&str>)?;
             let screen_share_item = MenuItem::with_id(
                 app,
                 "screen-share-toggle",
@@ -455,16 +455,9 @@ fn main() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" {
                     // Hide main window on close instead of quitting (app stays in tray)
+                    // PTY session persists — user can reopen and resume where they left off
                     api.prevent_close();
                     window.hide().ok();
-                } else if window.label() == crate::pty::ASSISTANT_SESSION_ID {
-                    // Assistant window closed — kill the singleton PTY session.
-                    let session_id = crate::pty::ASSISTANT_SESSION_ID.to_string();
-                    if let Some(state) = window.try_state::<commands::AppState>() {
-                        if let Ok(mut mgr) = state.pty_manager.lock() {
-                            mgr.kill_session(&session_id);
-                        }
-                    }
                 }
             }
         })
@@ -493,6 +486,9 @@ fn main() {
             commands::cmd_pty_kill,
             commands::cmd_list_agents,
             commands::cmd_terminal_info,
+            commands::cmd_get_settings,
+            commands::cmd_set_setting,
+            commands::cmd_get_storage_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running minutes app");
