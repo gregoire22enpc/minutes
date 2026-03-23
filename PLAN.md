@@ -2,7 +2,7 @@
 
 > **Name**: `minutes`
 > **Tagline**: Every meeting, every idea, every voice note — searchable by your AI
-> **Domain**: useminutes.dev (primary) + useminutes.app (desktop landing page)
+> **Domain**: useminutes.app (primary) + useminutes.app (desktop landing page)
 > **Registries**: crates.io (available), PyPI (available), npm (@minutes/cli or scoped)
 > **Created**: 2026-03-17
 > **Author**: Mat Silverstein
@@ -1652,7 +1652,7 @@ Issues identified and mitigations:
 - [ ] **MCPB format**: Verify current MCPB packaging spec — the format may have evolved since initial research
 - [ ] **pyannote subprocess protocol**: Design the IPC between Rust CLI and Python pyannote subprocess (JSON over stdout? Temp file handoff?)
 - [ ] **BlackHole setup UX**: How to make the Multi-Output Device setup painless? Auto-detect? `minutes setup` command? Include a diagram?
-- [x] ~~**Domain registration**: Register `getminutes.dev` before someone else does~~ **RESOLVED** — registered useminutes.dev + useminutes.app on Vercel
+- [x] ~~**Domain registration**: Register `getminutes.dev` before someone else does~~ **RESOLVED** — registered useminutes.app + useminutes.app on Vercel
 - [x] ~~**IPC protocol (record/stop/status)**: PID file + signals. See IPC Protocol section in Phase 1a.~~ **RESOLVED**
 - [x] ~~**Watch dedup strategy**: Move to `processed/` on success, `failed/` on error. Lock file prevents concurrent watchers.~~ **RESOLVED**
 - [x] ~~**iCloud sync race condition**: Settle delay (2s size-stability check) before processing watched files.~~ **RESOLVED**

@@ -255,5 +255,5 @@
       ]
     }
   },
-  "$id": "https://useminutes.dev/schema/meeting.schema.json"
+  "$id": "https://useminutes.app/schema/meeting.schema.json"
 }
