@@ -18,6 +18,7 @@ Record a meeting. Capture a voice memo on a walk. Ask Claude *"what did I promis
 
 <p align="center">
   <a href="#claude-code-plugin">Claude Code</a> &bull;
+  <a href="#mistral-vibe">Mistral Vibe</a> &bull;
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Codex</a> &bull;
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Gemini CLI</a> &bull;
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Claude Desktop</a> &bull;
@@ -365,6 +366,27 @@ minutes record → minutes stop       → hook alerts if decisions conflict with
   ↓
 /minutes weekly                     → themes, decision arcs, stale items, Monday brief
 ```
+
+### Mistral Vibe
+
+Minutes ships with native Mistral Vibe support. Open the repo in Vibe and the project-local `.vibe/config.toml` auto-configures the MCP server and skills:
+
+```bash
+cd minutes
+vibe
+```
+
+**6 slash-command skills** — record, search, prep, status, weekly, voxtral:
+```
+/minutes record     → start/stop live capture
+/minutes search     → full-text search across meetings and memos
+/minutes prep       → interactive meeting prep with relationship brief
+/minutes status     → check recording / processing / idle state
+/minutes weekly     → synthesize the past week's meetings
+/minutes voxtral    → set up Voxtral (Mistral speech-to-text) as transcription engine
+```
+
+The config also wires up the Minutes MCP server so Vibe can query your meetings directly via tool calls (`npx minutes-mcp`). For Mistral-native transcription, the `/minutes voxtral` skill walks through replacing whisper.cpp with [voxtral.c](https://github.com/antirez/voxtral.c) — Mistral's open-weight speech model with lower word error rates on 13 supported languages.
 
 ### Minutes Desktop Assistant
 

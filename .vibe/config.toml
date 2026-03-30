@@ -1,0 +1,67 @@
+# Minutes — Mistral Vibe project configuration
+# https://github.com/silverstein/minutes
+
+# ─── System prompt ────────────────────────────────────────────────────────────
+# Give Vibe contextual awareness of the project.
+system_prompt = """
+You are working inside the Minutes repository — an open-source conversation
+memory tool that records meetings and voice memos, transcribes them locally
+with whisper.cpp (or Voxtral/Parakeet), and makes everything searchable.
+
+Key paths:
+  - CLI crate:        crates/cli/
+  - MCP server:       crates/mcp/
+  - Core library:     crates/core/
+  - Tauri desktop:    tauri/
+  - Landing site:     site/
+  - User meetings:    ~/meetings/
+  - Runtime state:    ~/.minutes/
+
+The project is Rust (Cargo workspace) + TypeScript (MCP server) + Tauri v2.
+Tests: `cargo test` for Rust, `npm test` inside crates/mcp/ for TS.
+Issue tracker: `bd` (beads) — run `bd ready` to find available work.
+"""
+
+# ─── MCP servers ──────────────────────────────────────────────────────────────
+# Connect the Minutes MCP server so Vibe can query meetings directly.
+[mcp_servers.minutes]
+command = "npx"
+args = ["minutes-mcp"]
+
+# ─── Tool permissions ─────────────────────────────────────────────────────────
+# Auto-approve read-only tools; prompt for mutations.
+[tools.read_file]
+permission = "always"
+
+[tools.grep]
+permission = "always"
+
+[tools.bash]
+permission = "ask"
+
+[tools.write_file]
+permission = "ask"
+
+[tools.search_replace]
+permission = "ask"
+
+# ─── Voxtral integration (Mistral speech models) ─────────────────────────────
+# Voxtral Realtime (voxtral.c) can replace whisper.cpp as the transcription
+# engine. To use it, build voxtral.c and configure Minutes:
+#
+#   # Install voxtral.c (https://github.com/antirez/voxtral.c)
+#   git clone https://github.com/antirez/voxtral.c && cd voxtral.c
+#   make mps          # Apple Silicon (or: make blas for Linux)
+#   ./download_model.sh
+#
+#   # In ~/.config/minutes/config.toml:
+#   [transcription]
+#   engine = "voxtral"
+#   voxtral_binary = "/path/to/voxtral.c/voxtral"
+#   voxtral_model = "/path/to/voxtral.c/voxtral-model"
+#
+# Voxtral supports 13 languages vs Whisper's broader set, but achieves lower
+# word error rates on supported languages. See: https://mistral.ai/news/voxtral
+
+# ─── Skills ───────────────────────────────────────────────────────────────────
+skill_paths = [".vibe/skills"]

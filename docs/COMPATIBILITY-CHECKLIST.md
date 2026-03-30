@@ -55,6 +55,9 @@ Per surface:
   - returns “already recording” if another surface already owns the session
 - Plugin:
   - must route through CLI or MCP semantics, not invent its own session model
+- Vibe:
+  - `/minutes record` skill delegates to `minutes record` via bash; inherits CLI start semantics
+  - must return "already recording" if another surface owns the session
 
 ## Stop Recording
 
@@ -77,6 +80,9 @@ Per surface:
   - must not return a blank response on empty/edge cases
 - Plugin:
   - should inherit CLI/MCP stop semantics exactly
+- Vibe:
+  - `/minutes record` skill runs `minutes stop` via bash; waits for JSON result
+  - must not return blank on empty/edge cases (inherits CLI semantics)
 
 ## Status
 
@@ -114,6 +120,9 @@ Per surface:
   - includes saved path in response text
 - Plugin:
   - should surface the artifact path or quote it from CLI/MCP output
+- Vibe:
+  - skills surface saved markdown paths from CLI JSON output
+  - preserved-capture paths shown on failure (inherits CLI semantics)
 
 ## Empty States
 
@@ -133,6 +142,9 @@ Per surface:
   - renders an intentional empty state or the onboarding-first-artifact flow
 - Plugin:
   - should treat empty results as valid outcomes, not failures
+- Vibe:
+  - `/minutes search` skill treats empty JSON arrays as valid "no results" outcomes
+  - presents human-readable empty state to the user
 
 ## Recovery
 
@@ -151,6 +163,8 @@ Per surface:
   - should expose preserved-capture outcomes as explicit failures-with-recovery, not as silent no-ops
 - Plugin:
   - should prefer CLI/MCP recovery semantics and not hide preserved paths
+- Vibe:
+  - skills delegate to CLI; preserved-capture paths are surfaced, not hidden
 
 ## User-Controlled Signals
 
